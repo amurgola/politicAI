@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Prompts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            width: 300px;
+        }
+        textarea, select, input {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .tab {
+            overflow: hidden;
+            border-bottom: 1px solid #ccc;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        .tab button.active {
+            border-bottom: 2px solid #0078D7;
+            font-weight: bold;
+        }
+        .tabcontent {
+            display: none;
+            padding: 10px 0;
+        }
+        .tabcontent.active {
+            display: block;
+        }
+
+        .prompt-list, .domain-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .prompt-item, .domain-item {
+            border-bottom: 1px solid #ccc;
+            padding: 5px 0;
+        }
+        .prompt-item button, .domain-item button {
+            background: none;
+            border: none;
+            color: #d9534f;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #ignoreDomainButton {
+            margin-top: 10px;
+            background-color: #0078D7;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="tab">
+    <button class="tablinks active" id="addPromptTab">Add Prompt</button>
+    <button class="tablinks" id="viewPromptsTab">View Prompts</button>
+    <button class="tablinks" id="ignoredDomainsTab">Ignored Domains</button>
+</div>
+
+<div id="addPromptContent" class="tabcontent active">
+    <h3>Add New Prompt</h3>
+    <label for="example">Give an example:</label>
+    <textarea id="example" placeholder="Describe an example..." rows="3"></textarea>
+
+    <label for="isPolitical">Is this political?</label>
+    <select id="isPolitical">
+        <option value="political">Political</option>
+        <option value="political but not factual">Political but not factual</option>
+        <option value="not political">Not Political</option>
+    </select>
+
+    <label for="reason">Optional reason:</label>
+    <textarea id="reason" placeholder="Provide a reason..." rows="2"></textarea>
+
+    <button id="savePrompt">Save Prompt</button>
+    <button id="clearPrompts">Clear All Prompts</button>
+
+    <p id="status" style="color: green;"></p>
+
+    <button id="ignoreDomainButton">Ignore this domain?</button>
+</div>
+
+<div id="viewPromptsContent" class="tabcontent">
+    <h3>Your Prompts</h3>
+    <ul id="promptList" class="prompt-list"></ul>
+</div>
+
+<div id="ignoredDomainsContent" class="tabcontent">
+    <h3>Ignored Domains</h3>
+    <ul id="domainList" class="domain-list"></ul>
+    <button id="clearDomains">Clear All Ignored Domains</button>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
