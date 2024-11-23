@@ -57,18 +57,38 @@
     `;
     document.head.appendChild(style);
 
-    const initialPrompts = [
-        { role: "system", content: "Assistant's goal is to determine if the user's statement is related to politics regardless of the specifics or factuality. The assistant shall respond only with 'political' or 'not political' followed by the reasoning. If the statement is not factual and related to politics, please respond starting with 'political but not factual'. Only respond in English and as concise as possible, only respond in characters without accents" },
+    const initialPrompts =  [
+        { role: "system", content: "Assistants goal is to determine if the users statement is related to politics regardless of the specifics or factuality. The assistant shall respond only with 'political' or 'not political' followed by the reasoning. Please be aware this is only to detect governmental and governmental policy politics exclusively. Only respond in English and as concise as possible, only respond in characters without accents. Please be aware this is only to detect governmental and policy politics, if the topic is not related then respond with not political." },
         { role: "user", content: "Donald Trump is now the president" },
-        { role: "assistant", content: "political, Donald Trump is a political figure" },
+        { role: "assistant", content: "political, Donald trump is a political figure" },
         { role: "user", content: "Grilled cheese is delicious" },
         { role: "assistant", content: "not political, grilled cheese is a food and the opinion of the food is not related to politics" },
         { role: "user", content: "Look at my cool hamster" },
         { role: "assistant", content: "not political, a hamster has nothing to do with politics" },
         { role: "user", content: "Kamala Harris lost the election" },
-        { role: "assistant", content: "political, both Kamala Harris and the election is a political topic" },
+        { role: "assistant", content: "political, both kamala harris and the election is a political topic" },
         { role: "user", content: "Kamala Harris is the president" },
-        { role: "assistant", content: "political but not factual, while Kamala Harris is not the president she is a political figure" },
+        { role: "assistant", content: "political, while Kamala Harris is not the president she is a political figure" },
+        { role: "user", content: "Kamala Harris's new picture" },
+        { role: "assistant", content: "political, while the topic itself is not political Kamala Harris is related to politics" },
+        { role: "user", content: "Kamala Harris's new picture is cool" },
+        { role: "assistant", content: "political, while the opinion itself is not political Kamala Harris is related to politics" },
+        { role: "user", content: "Kamala Harris" },
+        { role: "assistant", content: "political, while the person itself is not political Kamala Harris is related to politics" },
+        { role: "user", content: "Kamala Harris is a hamster" },
+        { role: "assistant", content: "political, while this is not truthful Kamala Harris is related to politics" },
+        { role: "user", content: "2025 5* QB Bryce Underwood flips from LSU to Michigan" },
+        { role: "assistant", content: "not political, sports are not related to governmental or policy politics" },
+        { role: "user", content: "Fake syrup is superior to real maple syrup." },
+        { role: "assistant", content: "not political, maple syrup are not related to governmental or policy politics" },
+        { role: "user", content: "AIO by not going to thanksgiving?" },
+        { role: "assistant", content: "not political, while this is regarding family dynamics its not related to politics directly" },
+        { role: "user", content: "view more: next ›" },
+        { role: "assistant", content: "not political, this appears to be a navigation element and is not political" },
+        { role: "user", content: "The Black Friday and doorbuster deals you’ve been waiting for are here now. Don’t miss out." },
+        { role: "assistant", content: "not political, this is an advertisement for a company and has no political messaging" },
+        { role: "user", content: "Zeus’s agency has released their official statement.(translated)" },
+        { role: "assistant", content: "not political, this is regarding a companies dynamics its not related to politics directly" },
         { role: "user", content: "Former Czech PM Andrej Babiš wearing a 'Make Europe Great Again'" },
         { role: "assistant", content: "political, Andrej Babis is a political figure and Make Europe Great again might be related to MAGA" },
     ];
@@ -81,13 +101,17 @@
         if (event.data.type === 'RESPONSE_INITIAL_DATA') {
             const storedPrompts = event.data.prompts || [];
             const ignoredDomains = event.data.ignoredDomains || [];
+            const promptResults = event.data.promptResults || {};
             const currentDomain = window.location.hostname;
+
+            Object.assign(isItPoliticalCache, promptResults);
+            console.log('Initial data received:', storedPrompts, ignoredDomains, promptResults);
 
             if (ignoredDomains.includes(currentDomain)) {
                 console.log('Current domain is ignored. Skipping processing.');
                 return;
             } else {
-                const prompts = storedPrompts.concat(initialPrompts);
+                const prompts = initialPrompts.concat(storedPrompts);
                 initializeSession(prompts);
             }
         }
@@ -95,8 +119,10 @@
 
     async function initializeSession(prompts) {
         try {
-            if(session == null){
+            if (session == null || session.tokensLeft < 100) {
                 session = await window.ai.languageModel.create({
+                    temperature: 0,
+                    topK: 3,
                     initialPrompts: prompts
                 });
                 console.log('AI session initialized.');
@@ -117,10 +143,26 @@
         }, 5000);
     }
 
+    const regexExclusions = [
+        /^submitted\s\d+\shours\sago\s.*?by\s\S+\sto\sr\/\S+/
+    ];
+
     async function isItPolitical(prompt) {
         if (isItPoliticalCache[prompt]) {
             return isItPoliticalCache[prompt];
         }
+
+        console.log('Prompt:', prompt);
+
+        for (let i = 0; i < regexExclusions.length; i++) {
+            const regex = new RegExp(regexExclusions[i]);
+            if (prompt.match(regex)) {
+                isItPoliticalCache[prompt] = 'not political';
+                storeCachedResult(prompt, 'not political');
+                return 'not political';
+            }
+        }
+
         try {
             const cachedResult = await getCachedResult(prompt);
             if (cachedResult) {

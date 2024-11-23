@@ -8,10 +8,11 @@
         if (event.source !== window) return;
 
         if (event.data.type === 'REQUEST_INITIAL_DATA') {
-            chrome.storage.local.get(['prompts', 'ignoredDomains'], (data) => {
+            chrome.storage.local.get(['prompts', 'ignoredDomains', 'promptResults'], (data) => {
                 const prompts = data.prompts || [];
                 const ignoredDomains = data.ignoredDomains || [];
-                window.postMessage({ type: 'RESPONSE_INITIAL_DATA', prompts: prompts, ignoredDomains: ignoredDomains }, '*');
+                const promptResults = data.promptResults || {};
+                window.postMessage({ type: 'RESPONSE_INITIAL_DATA', prompts: prompts, ignoredDomains: ignoredDomains, promptResults: promptResults }, '*');
             });
         } else if (event.data.type === 'GET_CACHED_RESULT') {
             const prompt = event.data.prompt;
