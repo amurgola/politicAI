@@ -1,33 +1,34 @@
 ﻿// popup.js
 
-document.getElementById('addPromptTab').addEventListener('click', () => {
-    openTab('addPrompt');
+const tabs = [
+    { id: 'addPrompt', loadFunction: null },
+    { id: 'viewPrompts', loadFunction: loadPrompts },
+    { id: 'ignoredDomains', loadFunction: loadDomains },
+    { id: 'about', loadFunction: null }
+];
+
+tabs.forEach(tab => {
+    document.getElementById(`${tab.id}Tab`).addEventListener('click', () => {
+        openTab(tab.id);
+        if (tab.loadFunction) tab.loadFunction();
+    });
 });
 
-document.getElementById('viewPromptsTab').addEventListener('click', () => {
-    openTab('viewPrompts');
-    loadPrompts();
-});
-
-document.getElementById('ignoredDomainsTab').addEventListener('click', () => {
-    openTab('ignoredDomains');
-    loadDomains();
+document.getElementById('resetSystemPrompts').addEventListener('click', () => {
+    chrome.storage.local.remove('systemPrompts', () => {
+        alert('System prompts have been reset. Refresh page to reload.');
+    });
 });
 
 function openTab(tabName) {
     const tabcontents = document.getElementsByClassName('tabcontent');
     const tablinks = document.getElementsByClassName('tablinks');
 
-    for (let i = 0; i < tabcontents.length; i++) {
-        tabcontents[i].classList.remove('active');
-    }
+    Array.from(tabcontents).forEach(content => content.classList.remove('active'));
+    Array.from(tablinks).forEach(link => link.classList.remove('active'));
 
-    for (let i = 0; i < tablinks.length; i++) {
-        tablinks[i].classList.remove('active');
-    }
-
-    document.getElementById(tabName + 'Content').classList.add('active');
-    document.getElementById(tabName + 'Tab').classList.add('active');
+    document.getElementById(`${tabName}Content`).classList.add('active');
+    document.getElementById(`${tabName}Tab`).classList.add('active');
 }
 
 document.getElementById('savePrompt').addEventListener('click', () => {
@@ -41,7 +42,6 @@ document.getElementById('savePrompt').addEventListener('click', () => {
     }
 
     const assistantContent = isPolitical + (reason ? ', ' + reason : '');
-
     const userPrompt = { role: 'user', content: example };
     const assistantPrompt = { role: 'assistant', content: assistantContent };
 
@@ -60,9 +60,14 @@ document.getElementById('savePrompt').addEventListener('click', () => {
 });
 
 function loadPrompts() {
-    chrome.storage.local.get({ prompts: [] }, (data) => {
-        const prompts = data.prompts;
-        const promptList = document.getElementById('promptList');
+    loadPromptList('prompts', 'promptList', 'No prompts added yet.');
+    loadPromptList('systemPrompts', 'systemPromptList', 'No system prompts added yet.');
+}
+
+function loadPromptList(storageKey, listElementId, emptyMessage) {
+    chrome.storage.local.get({ [storageKey]: [] }, (data) => {
+        const prompts = data[storageKey];
+        const promptList = document.getElementById(listElementId);
         promptList.innerHTML = '';
 
         for (let i = 0; i < prompts.length; i += 2) {
@@ -78,32 +83,28 @@ function loadPrompts() {
                 <button data-index="${i}">Remove</button>
             `;
 
-            li.querySelector('button').addEventListener('click', function() {
+            li.querySelector('button').addEventListener('click', function () {
                 const index = parseInt(this.getAttribute('data-index'));
-                removePromptPair(index);
+                removePromptPair(storageKey, index, () => loadPromptList(storageKey, listElementId, emptyMessage));
             });
 
             promptList.appendChild(li);
         }
 
         if (prompts.length === 0) {
-            promptList.innerHTML = '<p>No prompts added yet.</p>';
+            promptList.innerHTML = `<p>${emptyMessage}</p>`;
         }
     });
 }
 
-function removePromptPair(index) {
-    chrome.storage.local.get({ prompts: [] }, (data) => {
-        const prompts = data.prompts;
+function removePromptPair(storageKey, index, reloadFunction) {
+    chrome.storage.local.get({ [storageKey]: [] }, (data) => {
+        const prompts = data[storageKey];
         prompts.splice(index, 2);
-        chrome.storage.local.set({ prompts }, () => {
-            loadPrompts();
+        chrome.storage.local.set({ [storageKey]: prompts }, () => {
+            reloadFunction();
         });
     });
-}
-
-if (document.getElementById('viewPromptsContent').classList.contains('active')) {
-    loadPrompts();
 }
 
 document.getElementById('ignoreDomainButton').addEventListener('click', () => {
@@ -115,7 +116,7 @@ document.getElementById('ignoreDomainButton').addEventListener('click', () => {
             let ignoredDomains = data.ignoredDomains;
             if (!ignoredDomains.includes(domain)) {
                 ignoredDomains.push(domain);
-                chrome.storage.local.set({ ignoredDomains: ignoredDomains }, () => {
+                chrome.storage.local.set({ ignoredDomains }, () => {
                     alert(`Domain ${domain} has been added to the ignored list.`);
                 });
             } else {
@@ -131,9 +132,7 @@ function loadDomains() {
         const domainList = document.getElementById('domainList');
         domainList.innerHTML = '';
 
-        for (let i = 0; i < domains.length; i++) {
-            const domain = domains[i];
-
+        domains.forEach((domain, i) => {
             const li = document.createElement('li');
             li.className = 'domain-item';
 
@@ -142,13 +141,13 @@ function loadDomains() {
                 <button data-index="${i}">Remove</button>
             `;
 
-            li.querySelector('button').addEventListener('click', function() {
+            li.querySelector('button').addEventListener('click', function () {
                 const index = parseInt(this.getAttribute('data-index'));
                 removeDomain(index);
             });
 
             domainList.appendChild(li);
-        }
+        });
 
         if (domains.length === 0) {
             domainList.innerHTML = '<p>No domains are ignored.</p>';
@@ -166,6 +165,13 @@ function removeDomain(index) {
     });
 }
 
-if (document.getElementById('ignoredDomainsContent').classList.contains('active')) {
-    loadDomains();
-}
+const contentLoaders = [
+    { contentId: 'viewPromptsContent', loadFunction: loadPrompts },
+    { contentId: 'ignoredDomainsContent', loadFunction: loadDomains }
+];
+
+contentLoaders.forEach(item => {
+    if (document.getElementById(item.contentId).classList.contains('active')) {
+        item.loadFunction();
+    }
+});

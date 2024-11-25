@@ -57,61 +57,26 @@
     `;
     document.head.appendChild(style);
 
-    const initialPrompts =  [
-        { role: "system", content: "Assistants goal is to determine if the users statement is related to politics regardless of the specifics or factuality. The assistant shall respond only with 'political' or 'not political' followed by the reasoning. Please be aware this is only to detect governmental and governmental policy politics exclusively. Only respond in English and as concise as possible, only respond in characters without accents. Please be aware this is only to detect governmental and policy politics, if the topic is not related then respond with not political." },
-        { role: "user", content: "Donald Trump is now the president" },
-        { role: "assistant", content: "political, Donald trump is a political figure" },
-        { role: "user", content: "Grilled cheese is delicious" },
-        { role: "assistant", content: "not political, grilled cheese is a food and the opinion of the food is not related to politics" },
-        { role: "user", content: "Look at my cool hamster" },
-        { role: "assistant", content: "not political, a hamster has nothing to do with politics" },
-        { role: "user", content: "Kamala Harris lost the election" },
-        { role: "assistant", content: "political, both kamala harris and the election is a political topic" },
-        { role: "user", content: "Kamala Harris is the president" },
-        { role: "assistant", content: "political, while Kamala Harris is not the president she is a political figure" },
-        { role: "user", content: "Kamala Harris's new picture" },
-        { role: "assistant", content: "political, while the topic itself is not political Kamala Harris is related to politics" },
-        { role: "user", content: "Kamala Harris's new picture is cool" },
-        { role: "assistant", content: "political, while the opinion itself is not political Kamala Harris is related to politics" },
-        { role: "user", content: "Kamala Harris" },
-        { role: "assistant", content: "political, while the person itself is not political Kamala Harris is related to politics" },
-        { role: "user", content: "Kamala Harris is a hamster" },
-        { role: "assistant", content: "political, while this is not truthful Kamala Harris is related to politics" },
-        { role: "user", content: "2025 5* QB Bryce Underwood flips from LSU to Michigan" },
-        { role: "assistant", content: "not political, sports are not related to governmental or policy politics" },
-        { role: "user", content: "Fake syrup is superior to real maple syrup." },
-        { role: "assistant", content: "not political, maple syrup are not related to governmental or policy politics" },
-        { role: "user", content: "AIO by not going to thanksgiving?" },
-        { role: "assistant", content: "not political, while this is regarding family dynamics its not related to politics directly" },
-        { role: "user", content: "view more: next ›" },
-        { role: "assistant", content: "not political, this appears to be a navigation element and is not political" },
-        { role: "user", content: "The Black Friday and doorbuster deals you’ve been waiting for are here now. Don’t miss out." },
-        { role: "assistant", content: "not political, this is an advertisement for a company and has no political messaging" },
-        { role: "user", content: "Zeus’s agency has released their official statement.(translated)" },
-        { role: "assistant", content: "not political, this is regarding a companies dynamics its not related to politics directly" },
-        { role: "user", content: "Former Czech PM Andrej Babiš wearing a 'Make Europe Great Again'" },
-        { role: "assistant", content: "political, Andrej Babis is a political figure and Make Europe Great again might be related to MAGA" },
-    ];
-
     window.postMessage({ type: 'REQUEST_INITIAL_DATA' }, '*');
 
     window.addEventListener('message', function(event) {
         if (event.source !== window) return;
 
         if (event.data.type === 'RESPONSE_INITIAL_DATA') {
+            const initialSystemPrompt = [{ role: "system", content: "Assistants goal is to determine if the users statement is related to politics regardless of the specifics or factuality. The assistant shall respond only with 'political' or 'not political' followed by the reasoning. Please be aware this is only to detect governmental and governmental policy politics exclusively. Only respond in English and as concise as possible, only respond in characters without accents. Please be aware this is only to detect governmental and policy politics, if the topic is not related then respond with not political." }]
             const storedPrompts = event.data.prompts || [];
+            const systemPrompts = event.data.systemPrompts || [];
             const ignoredDomains = event.data.ignoredDomains || [];
             const promptResults = event.data.promptResults || {};
             const currentDomain = window.location.hostname;
 
             Object.assign(isItPoliticalCache, promptResults);
-            console.log('Initial data received:', storedPrompts, ignoredDomains, promptResults);
 
             if (ignoredDomains.includes(currentDomain)) {
                 console.log('Current domain is ignored. Skipping processing.');
                 return;
             } else {
-                const prompts = initialPrompts.concat(storedPrompts);
+                const prompts = initialSystemPrompt.concat(systemPrompts.concat(storedPrompts));
                 initializeSession(prompts);
             }
         }
