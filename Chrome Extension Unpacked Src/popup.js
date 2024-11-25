@@ -59,15 +59,6 @@ document.getElementById('savePrompt').addEventListener('click', () => {
     });
 });
 
-document.getElementById('clearPrompts').addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear all prompts?')) {
-        chrome.storage.local.set({ prompts: [] }, () => {
-            alert('All prompts cleared.');
-            loadPrompts();
-        });
-    }
-});
-
 function loadPrompts() {
     chrome.storage.local.get({ prompts: [] }, (data) => {
         const prompts = data.prompts;
@@ -82,8 +73,8 @@ function loadPrompts() {
             li.className = 'prompt-item';
 
             li.innerHTML = `
-                <strong>User:</strong> ${userPrompt.content}<br>
-                <strong>Assistant:</strong> ${assistantPrompt.content}
+                <strong>Prompt:</strong> ${userPrompt.content}<br>
+                <strong>Response:</strong> ${assistantPrompt.content}
                 <button data-index="${i}">Remove</button>
             `;
 
@@ -174,15 +165,6 @@ function removeDomain(index) {
         });
     });
 }
-
-document.getElementById('clearDomains').addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear all ignored domains?')) {
-        chrome.storage.local.set({ ignoredDomains: [] }, () => {
-            alert('All ignored domains cleared.');
-            loadDomains();
-        });
-    }
-});
 
 if (document.getElementById('ignoredDomainsContent').classList.contains('active')) {
     loadDomains();

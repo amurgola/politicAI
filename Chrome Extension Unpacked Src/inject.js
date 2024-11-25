@@ -152,8 +152,6 @@
             return isItPoliticalCache[prompt];
         }
 
-        console.log('Prompt:', prompt);
-
         for (let i = 0; i < regexExclusions.length; i++) {
             const regex = new RegExp(regexExclusions[i]);
             if (prompt.match(regex)) {
