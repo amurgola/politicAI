@@ -2,6 +2,8 @@
 (function() {
     'use strict';
 
+    let aiAvailable = false;
+
     chrome.runtime.sendMessage({ action: 'injectScript' });
 
     window.addEventListener('message', function(event) {
@@ -50,12 +52,9 @@
                         { role: "assistant", content: "political, Andrej Babis is a political figure and Make Europe Great again might be related to MAGA" }
                     ]
 
-                    chrome.storage.local.set({ systemPrompts: systemPrompts }, () => {
-                        console.log('System prompts set.');
-                    });
+                    chrome.storage.local.set({ systemPrompts: systemPrompts }, () => {});
                 }
 
-                console.log('systemPrompts:', systemPrompts);
                 window.postMessage({ type: 'RESPONSE_INITIAL_DATA', prompts: prompts, ignoredDomains: ignoredDomains, promptResults: promptResults, systemPrompts: systemPrompts }, '*');
             });
         } else if (event.data.type === 'GET_CACHED_RESULT') {
@@ -84,10 +83,12 @@
                 const prompts = data.prompts || [];
                 prompts.push(userPrompt);
                 prompts.push(assistantPrompt);
-                chrome.storage.local.set({ prompts: prompts }, () => {
-                    console.log('Prompt pair saved.');
-                });
+                chrome.storage.local.set({ prompts: prompts }, () => {});
             });
+        } else if (event.data.type === 'SET_AI_AVAILABLE') {
+            aiAvailable = true;
+        } else if (event.data.type === 'GET_AI_AVAILABLE') {
+            window.postMessage({ type: 'AI_AVAILABLE', aiAvailable: aiAvailable}, '*');
         }
     });
 })();

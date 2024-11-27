@@ -2,9 +2,13 @@
 (function() {
     'use strict';
 
-    const isItPoliticalCache = {};
+    let isItPoliticalCache = {};
     let session = null;
+    let aiAvailable = false;
     let isProcessing = false;
+    let initialSystemPrompt = [{ role: "system", content: "Assistants goal is to determine if the users statement is related to politics regardless of the specifics or factuality. The assistant shall respond only with 'political' or 'not political' followed by the reasoning. Please be aware this is only to detect governmental and governmental policy politics exclusively. Only respond in English and as concise as possible, only respond in characters without accents. Please be aware this is only to detect governmental and policy politics, if the topic is not related then respond with not political." }]
+    let storedPrompts = [];
+    let systemPrompts = [];
     const processingQueue = [];
 
     const style = document.createElement('style');
@@ -13,7 +17,7 @@
             position: relative;
             overflow: hidden;
         }
-        .processing-animation::after {
+        .processing-animation::after, #ai-loading-modal::after {
             content: '';
             position: absolute;
             top: -100%;
@@ -26,7 +30,8 @@
         @keyframes processingAnim {
             0% { top: -100%; }
             100% { top: 100%; }
-        }
+        }        
+  
         .blurred-content {
             filter: blur(5px);
             transition: filter 0.5s;
@@ -54,6 +59,20 @@
         .buttons-container button:hover {
             background-color: #005a9e;
         }
+        #ai-loading-modal {
+            z-index: 9999;
+            position: fixed;
+            top: 0;
+            right: 0;
+            text-align: center;
+            align-content: center;
+            height: 100%;
+            width: 100%;
+            font-size: 20pt;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            color: #db6b18;
+        }
     `;
     document.head.appendChild(style);
 
@@ -63,34 +82,60 @@
         if (event.source !== window) return;
 
         if (event.data.type === 'RESPONSE_INITIAL_DATA') {
-            const initialSystemPrompt = [{ role: "system", content: "Assistants goal is to determine if the users statement is related to politics regardless of the specifics or factuality. The assistant shall respond only with 'political' or 'not political' followed by the reasoning. Please be aware this is only to detect governmental and governmental policy politics exclusively. Only respond in English and as concise as possible, only respond in characters without accents. Please be aware this is only to detect governmental and policy politics, if the topic is not related then respond with not political." }]
-            const storedPrompts = event.data.prompts || [];
-            const systemPrompts = event.data.systemPrompts || [];
+            storedPrompts = event.data.prompts || [];
+            systemPrompts = event.data.systemPrompts || [];
+            isItPoliticalCache= event.data.promptResults || {};
+
             const ignoredDomains = event.data.ignoredDomains || [];
-            const promptResults = event.data.promptResults || {};
             const currentDomain = window.location.hostname;
 
-            Object.assign(isItPoliticalCache, promptResults);
-
             if (ignoredDomains.includes(currentDomain)) {
-                console.log('Current domain is ignored. Skipping processing.');
                 return;
             } else {
-                const prompts = initialSystemPrompt.concat(systemPrompts.concat(storedPrompts));
-                initializeSession(prompts);
+                checkSessionHealth();
             }
         }
     });
 
+    function checkSessionHealth() {
+        if(session == null || session.tokensLeft < 100){
+            const prompts = initialSystemPrompt.concat(systemPrompts.concat(storedPrompts));
+            initializeSession(prompts);
+        }
+    }
+
     async function initializeSession(prompts) {
         try {
+            let sessionAvailable;
+            if(session == null){
+                sessionAvailable = await window.ai.languageModel.capabilities()
+                if (sessionAvailable === undefined || sessionAvailable.available === "no") {
+                    const aiLoadingOverlay = document.createElement('div');
+                    aiLoadingOverlay.id = "ai-loading-modal";
+                    aiLoadingOverlay.textContent = "PoliticAI Loading..."
+                    document.body.appendChild(aiLoadingOverlay);
+                }
+            }
+
             if (session == null || session.tokensLeft < 100) {
                 session = await window.ai.languageModel.create({
                     temperature: 0,
                     topK: 3,
                     initialPrompts: prompts
                 });
-                console.log('AI session initialized.');
+
+                var waitForSessionAvailable = setInterval(async () => {
+                    sessionAvailable = await window.ai.languageModel.capabilities();
+                    if (sessionAvailable !== undefined && sessionAvailable.available !== "no") {
+                        aiAvailable = true;
+                        const aiLoadingOverlay = document.getElementById("ai-loading-modal");
+                        if(aiLoadingOverlay !== null){
+                            aiLoadingOverlay.remove();
+                        }
+
+                        clearInterval(waitForSessionAvailable);
+                    }
+                }, 1000);
             }
 
             startProcessing();
@@ -103,6 +148,7 @@
         collectElementsToProcess();
         processQueue();
         setInterval(() => {
+            checkSessionHealth();
             collectElementsToProcess();
             processQueue();
         }, 5000);
@@ -221,7 +267,7 @@
         if (isProcessing) return;
         isProcessing = true;
 
-        while (processingQueue.length > 0) {
+        while (processingQueue.length > 0 && aiAvailable) {
             const element = processingQueue.shift();
             const text = element.textContent.trim();
 
