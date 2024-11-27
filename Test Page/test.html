@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Resonant.js Practical Demo</title>
+    <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css"
+    />
+    <script src="https://unpkg.com/resonantjs@latest/resonant.min.js"></script>
+    <style>
+        section.grid {
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 0.5rem;
+        }
+        .conditional {
+            font-style: italic;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<main class="container">
+    <h1>PoliticAI Sample Prompts</h1>
+
+    <section class="grid">
+        <div>
+            <h2>Prompts</h2>
+            <ul res="prompts">
+                <li>
+                    <span res-prop="prompt"></span> - Should be '<span res-prop="resultExpectation"></span>'
+                </li>
+            </ul>
+        </div>
+    </section>
+    <section class="grid">
+        <div>
+            <h2>Add to Prompts</h2>
+            <div class="form-group">
+                <label>Prompt
+                    <input type="text" res="promptToAdd" />
+                </label>
+                <label>Expected Result Blurred?
+                    <input type="text" res="resultExpectationToAdd" />
+                </label>
+                <button onclick="addPrompt()">Add</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const resonantJs = new Resonant();
+
+    resonantJs.addAll({
+        prompts: [
+            { prompt: "Kamala Harris is the president", resultExpectation: "Blurred" },
+            { prompt: "Trump announces new tariffs", resultExpectation: "Blurred" },
+            { prompt: "Kittens are very cute", resultExpectation: "Not Blurred" },
+            { prompt: "Illegal Immigrants want to vaccinate your kids", resultExpectation: "Blurred" },
+            { prompt: "Groceries are expensive", resultExpectation: "Not Blurred" },
+            { prompt: "Elon Musk wants to buy MSNBC", resultExpectation: "Blurred" },
+            { prompt: "Google AI is awesome", resultExpectation: "Not Blurred" },
+            { prompt: "Andy is a programmer who is hoping to win a hackathon", resultExpectation: "Not Blurred" },
+        ],
+        promptToAdd: "",
+        resultExpectationToAdd: "Blurred",
+    });
+
+    function addPrompt() {
+        prompts.push({
+            prompt: promptToAdd,
+            resultExpectation: resultExpectationToAdd,
+        });
+        promptToAdd = "";
+        resultExpectationToAdd = "Blurred";
+    }
+</script>
+</body>
+</html>
